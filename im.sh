@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2015-11-04 - 19:19
 #      License: MIT
-#  Last update: 2015-11-28 15:24
+#  Last update: 2015-11-30 12:33
 # ----------------------------------------------------------------------------- #
 #  im.sh  Copyright (C) 2012-2014 j kepler
 #
@@ -301,9 +301,9 @@ Others:
             shift
         fi
         if [[ -z "$_FILTER" ]]; then
-            _FILTER=" $FIELD like '%$PATT%' "
+            _FILTER=" $FIELD like \"%$PATT%\" "
         else
-            _FILTER=" $_FILTER and  $FIELD like '%$PATT%' "
+            _FILTER=" $_FILTER and  $FIELD like \"%$PATT%\" "
         fi
         #echo "QUERY is $FIELD = $PATT"
         $RDEBUG "QUERY is $_FILTER"
@@ -394,7 +394,7 @@ if [[ -z "$FIELD" ]]; then
     # write command to history file
     [[ -n $PATT ]] && print -s -- "$PATT"
     [[ -n $PATT ]] && echo "$PATT" >> $IMDBHISTFILE
-    _FILTER=" $FIELD like '%$PATT%' "
+    _FILTER=" $FIELD like \"%$PATT%\" "
     do_field
     #(( ctr++ ))
 done
