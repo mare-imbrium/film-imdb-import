@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#  Last update: 2015-11-17 00:14
+#  Last update: 2015-11-30 12:56
 #
 # Steps:
 # 1 . run create_top_billed.sh in imdb_data on the utf-8.dat file.
@@ -11,6 +11,9 @@
 #  PRUNING should be optional and not depend on any given format
 #  We need to consolidate the process so that if the files are refreshed yearly we
 #  can easily re-run.
+# # :BUG:11/30/2015 00:49:: Now that we take billing in two digits
+#  the sort program puts <11> before <1>. We need to remove the bracket and sort
+#  numeric one second key or else put a 0 before since ones.
 
 export COLOR_RED="\\033[0;31m"
 export COLOR_GREEN="\\033[0;32m"
@@ -39,7 +42,30 @@ pdone() {
 # this file already has normalized data
 # first col is actress second is movie name. 
 # BUT movie name as character name and billing no.
-stub="actors"
+if [  $# -eq 0 ]; then
+    echo "Please pass --actors or --actresses or --directors"
+    exit
+else
+    case $1 in
+        --actor|--actors)
+            stub="actors"
+            ;;
+        --actress|--actresses)
+            stub="actresses"
+            ;;
+        --director|--directors)
+            stub="directors"
+            echo "Sorry this should not be here"
+            exit 1
+            ;;
+        *)
+            perror "Wrong input. "
+            echo "Please pass --actors or --actresses "
+            exit
+            ;;
+    esac
+fi
+[[ -z "$stub" ]] && { echo "Error: $stub blank." 1>&2; exit 1; }
 out="movie_$stub.dbf"
 infile="$stub.topbilled.dbf"
 if [[ ! -f "$infile" ]]; then
@@ -62,7 +88,9 @@ so that we can query cast of a movie, with top billed actors in the right order
 
 !
 pinfo "Inserting TAB character after movie name, and before billing number so data is sortable ..."
-gsed "s/\(<[0-9]>\)$/${DELIM}\1/;s/\(([0-9?]\{4\})\)/\1${DELIM}/;s/\(([0-9?]\{4\}\/[IV]\+)\)/\1${DELIM}/;" $infile > t.t
+#gsed "s/\(<[0-9]>\)$/${DELIM}\1/;s/\(([0-9?]\{4\})\)/\1${DELIM}/;s/\(([0-9?]\{4\}\/[IV]\+)\)/\1${DELIM}/;" $infile > t.t
+# change since we now take 10-19 also 11/30/2015
+gsed "s/<\(1[0-9]\)>$/${DELIM}\1/;s/<\([0-9]\)>$/${DELIM}0\1/;s/\(([0-9?]\{4\})\)/\1${DELIM}/;s/\(([0-9?]\{4\}\/[IV]\+)\)/\1${DELIM}/;" $infile > t.t
 pdone
 echo
 wc -l t.t
@@ -75,7 +103,9 @@ echo
 pinfo "Sorting on movie and billing ,,,"
 sort -k1,2 -t'	' t.tt > $out
 pdone
-pbold " ======= Process over."
+pdone " ======= Process over."
+pbold "After both files processed then run command:"
+echo "sort movie_actresses.dbf movie_actors.dbf > movie_cast.tsv"
 echo
 wc -l $out
 ls -lh $out
@@ -85,4 +115,4 @@ echo
 grep '^Casabla' $out | column -t -s$'\t'
 echo "-----------------------------------"
 echo 
-grep '^Gone with the ' $out | column -t -s$'\t'
+grep '^Gone with the W' $out | column -t -s$'\t'
