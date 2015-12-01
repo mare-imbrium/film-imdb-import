@@ -6,7 +6,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2015-11-03 - 10:21
 #      License: MIT
-#  Last update: 2015-11-15 21:23
+#  Last update: 2015-11-30 00:26
 # ----------------------------------------------------------------------------- #
 #  joinlines.rb  Copyright (C) 2012-2016 j kepler
 #
@@ -27,7 +27,7 @@ def printme (filename)
   fskip = File.open(skipname, 'w') 
   fout = File.open(outname, 'w') 
   puts "Writing to #{outname} "
-  puts "Writing skipped persons to #{outname} "
+  puts "Writing skipped persons to #{skipname} "
   puts
 
   #filename = "test.list"
@@ -46,7 +46,8 @@ def printme (filename)
         next
       else
         $stderr.puts "the complete line is: " if $debug
-        if parr.size < 3
+        # earlier this was 3 but it skipped some topbilled who were in only one movie e,g Crane, Fred
+        if parr.size < 1
           # the actor has only one or zero movies, skip him
           $stderr.puts " SKIPPING #{parr.join(delim)} " if $debug
           fskip.puts "#{parr.first} : #{parr.size}"
