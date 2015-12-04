@@ -42,7 +42,11 @@ sqlite3 $MYDATABASE << !
 !
 echo "Creating index on title"
 sqlite3 $MYDATABASE << !
-CREATE INDEX $MYTABLE_title on $MYTABLE(title) ;
+CREATE INDEX ${MYTABLE}_title on $MYTABLE(title) ;
+!
+echo "Creating index on name"
+sqlite3 $MYDATABASE << !
+CREATE INDEX ${MYTABLE}_name on $MYTABLE(name) ;
 !
 wc -l movie_cast.tsv
 
