@@ -40,20 +40,9 @@ echo "$MYTABLE Imported"
 sqlite3 $MYDATABASE << !
  select count(1) from $MYTABLE;
 !
-wc -l movie_cast.tsv
-exit 
-
-function realthing() {
+echo "Creating index on title"
 sqlite3 $MYDATABASE << !
-CREATE TABLE $MYTABLE (
-	title VARCHAR, 
-	billing VARCHAR, 
-	name VARCHAR, 
-	character VARCHAR
-);
-.headers off
-.mode tabs
-.import movie_cast.tsv $MYTABLE
+CREATE INDEX $MYTABLE_title on $MYTABLE(title) ;
 !
-echo "$MYTABLE Imported"
-}
+wc -l movie_cast.tsv
+
