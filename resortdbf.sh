@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#  Last update: 2015-11-30 12:56
+#  Last update: 2015-12-04 00:32
 #
 # Steps:
 # 1 . run create_top_billed.sh in imdb_data on the utf-8.dat file.
@@ -13,7 +13,7 @@
 #  can easily re-run.
 # # :BUG:11/30/2015 00:49:: Now that we take billing in two digits
 #  the sort program puts <11> before <1>. We need to remove the bracket and sort
-#  numeric one second key or else put a 0 before since ones.
+#  numeric one second key or else put a 0 before since ones. FIXED
 
 export COLOR_RED="\\033[0;31m"
 export COLOR_GREEN="\\033[0;32m"
@@ -52,11 +52,6 @@ else
             ;;
         --actress|--actresses)
             stub="actresses"
-            ;;
-        --director|--directors)
-            stub="directors"
-            echo "Sorry this should not be here"
-            exit 1
             ;;
         *)
             perror "Wrong input. "
