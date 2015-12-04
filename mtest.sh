@@ -14,7 +14,7 @@
 #        AUTHOR: YOUR NAME (), 
 #  ORGANIZATION: 
 #       CREATED: 12/02/2015 23:40
-#      REVISION:  2015-12-03 14:21
+#      REVISION:  2015-12-04 15:55
 #===============================================================================
 
 set -o nounset                              # Treat unset variables as an error
@@ -77,6 +77,13 @@ N="Spencer Tracy"
 pinfo "altname_equals $N"
 altname_equals $N
 pline
+N="Olivier, Laurence"
+pinfo "name_equals $N================== "
+name_equals $N
+pinfo "movies_of_actor $N================== "
+movies_of_actor $N
+
+pline
 N="Casablanca (1942)"
 pinfo "movie_cast_exact "$N""
 movie_cast_exact "$N"| column -t -s$'\t'
@@ -91,3 +98,11 @@ pinfo "movie_cast_exact "$N""
 movie_cast_exact --headers on --columns "name,character,billing" "$N" | csvlook --tabs 
 
 pline
+D="Kubrick"
+pinfo "director_last_name_equals $D ================== "
+director_last_name_equals $D
+D="Kubrick, Stanley"
+pinfo "director_name_equals $D================== "
+director_name_equals "$D"
+pinfo "movies_of_director $D ================== "
+movies_of_director "$D"
