@@ -1,0 +1,14 @@
+# joinlines.rb -n on actors.topbilled will give dbf file
+actors.topbilled actors.topbilled.dbf
+actresses.topbilled actresses.topbilled.dbf
+
+# ./resortdbf.sh on both files
+actors.topbilled.dbf movie_actors.dbf
+actresses.topbilled.dbf movie_actresses.dbf
+# sort these 2 to give movie_cast
+movie_actors.dbf movie_cast.tsv
+movie_actresses.dbf movie_cast.tsv
+
+# addyear.sh
+./directors.topbilled.dbf ./movie_directors.tsv
+
