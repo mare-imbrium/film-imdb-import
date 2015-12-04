@@ -33,16 +33,20 @@ echo "Creating $MYDATABASE "
 $COMM $MYDATABASE << !
 CREATE TABLE $MYTABLE (
 	name VARCHAR, 
-    offset integer,
-    gender CHAR(1),
-	newname VARCHAR
+	newname VARCHAR,
+    gender CHAR(1)
 );
 .headers off
 .mode tabs
 .import $INFILE $MYTABLE
 !
+echo "Creating index on name"
+$COMM $MYDATABASE << !
+CREATE UNIQUE INDEX actor_name on actor(name);
+!
 echo "$MYTABLE Imported"
 $COMM $MYDATABASE << !
  select count(1) from $MYTABLE;
+ select * from $MYTABLE limit 10;
 !
 wc -l $INFILE
