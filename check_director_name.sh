@@ -22,6 +22,57 @@
 set -o nounset                              # Treat unset variables as an error
 name=
 
+OPT_EXACT=
+OPT_IC=
+OPT_AKA=
+while [[ $1 = -* ]]; do
+    case "$1" in
+        -x|--exact)   shift
+            OPT_EXACT=1
+            ;;
+        -i|--ignorecase)   shift
+            OPT_IC=1
+            ;;
+        -V|--verbose)   shift
+            OPT_VERBOSE=1
+            ;;
+        --debug)        shift
+            OPT_DEBUG=1
+            ;;
+        -h|--help)
+            cat <<-!
+			$0 Version: 0.0.0 Copyright (C) 2015 jkepler
+			This program checks given input against director names to see if it is correct.
+            It prints the correct name if it can locate.
+            --exact | -x user is supplying exact name in LastName, Firstname format, don't attempt LIKE or ascii search.
+
+            The next searches for exact match.
+            $0 --exact "Kurosawa, Akira"
+			$0 --exact "Kurosawa, Jun (I)"
+			The next will fail since it requires a "(I)"
+			$0 --exact "Kurosawa, Jun"
+			The next works since exact search has not been asked for:
+			$0 "Kurosawa, Jun"
+
+			The next does a GLOB search (case sensitive)
+            $0 "Kurosawa, A*"
+			The next does a LIKE search (case insensitive)
+            $0 "Kurosawa, A%"
+			The next does a LIKE search (case insensitive) due to entire argument being in lower case
+            $0 "kurosawa, a"
+
+			The next checks the ascii_names table to see if this name has been stored with accents/diacritics.
+			$0 "Francois Truffaut"
+			!
+            exit
+            ;;
+        *)
+            echo "Error: Unknown option: $1" >&2 
+            echo "Use -h or --help for usage"
+            exit 1
+            ;;
+    esac
+done
 if [  $# -eq 0 ]; then
     echo "Error: director name required in Lastname, Firstname format" 1>&2
     exit 1
@@ -30,63 +81,119 @@ else
 fi
 #echo "Got name : $name" 1>&2
 ORIGNAME=$name
+MYTABLE=director
+MYDATABASE=movie.sqlite
 SQLITE=$(brew --prefix sqlite)/bin/sqlite3
 
-if [[ "${name: -1}" == '*' ]]; then
-    name=$( $SQLITE movie.sqlite "select name from director where name GLOB \"$name\";")
-    if [[ -n "$name" ]]; then
-        echo "$name"
-        exit 0
+name_search() {
+    name="$*"
+    RESULT=
+    if [[ -z "$MYOPERATOR" ]]; then
+        MYOPERATOR="="
     fi
+    RESULT=$( $SQLITE $MYDATABASE "select name from $MYTABLE where name $MYOPERATOR \"$name\";")
+}
+newname_search() {
+    name="$*"
+    RESULT=
+    if [[ -z "$MYOPERATOR" ]]; then
+        MYOPERATOR="="
+    fi
+    RESULT=$( $SQLITE $MYDATABASE "select name from $MYTABLE where newname $MYOPERATOR \"$name\";")
+}
+ascii_name_search() {
+    name="$*"
+    RESULT=
+    if [[ -z "$MYOPERATOR" ]]; then
+        MYOPERATOR="="
+    fi
+    RESULT=$( $SQLITE $MYDATABASE "select name from ascii_director where ascii_name $MYOPERATOR \"$name\";")
+}
+
+#-------------------------------------------------------------------------------
+# Exact search first
+#-------------------------------------------------------------------------------
+if [[ -n "$OPT_EXACT" ]]; then 
+	MYOPERATOR=
+	name_search "$name"
+	[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+	echo -e "No match for $name" 1<&2
+	exit 1
+fi
+
+OPT_HASCOMMA=
+if [[ $name == *,* ]]; then
+	OPT_HASCOMMA=1
+fi
+#-------------------------------------------------------------------------------
+# GLOB search, user specifies by placing * at end
+#-------------------------------------------------------------------------------
+if [[ "${name: -1}" == '*' ]]; then
+	MYOPERATOR=GLOB
+	name_search "$name"
+	[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+	# check newname if no comma present
+    if [[ -z "$OPT_HASCOMMA" ]]; then
+		MYOPERATOR=GLOB
+		newname_search "$name"
+		[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+	fi
     exit 1
 fi
-# exact search
-count=$( $SQLITE movie.sqlite "select count(1) from director where name = \"$name\";")
-
-if [[ $count -eq 1 ]]; then
-    echo "$name";
-    exit 0
+#-------------------------------------------------------------------------------
+# LIKE search , user specifies LIKE by placing % at start or end
+#-------------------------------------------------------------------------------
+OPT_LIKE=
+if [[ "$name" =~ ^% ]]; then OPT_LIKE=1; fi
+if [[ "$name" =~ %$ ]]; then OPT_LIKE=1; fi
+if [[ -n "$OPT_LIKE" ]]; then
+    MYOPERATOR=LIKE
+    name_search "$name"
+    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
 fi
+MYOPERATOR=
+# exact search even though not specified
+name_search "$name"
+[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+[[ -n "$OPT_EXACT" ]] && { exit 1; }
+
+#-------------------------------------------------------------------------------
+# NEWNAME search , user may have given in FIRST NAME LASTNAME format without comma.
+#-------------------------------------------------------------------------------
+
 # switch last and first and check newname, if name already in newname format then okay
 newname=$( echo "$name" | sed "s/^\([^,]*\), *\(.*\)/\2 \1/")
-#echo "trying with $newname"
-count=$( $SQLITE movie.sqlite "select count(1) from director where newname = \"$newname\";")
-if [[ $count -eq 1 ]]; then
-    name=$( $SQLITE movie.sqlite "select name from director where newname = \"$newname\";")
-    echo "$name"
-    exit 0
-elif [[ $count -gt 1 ]]; then
-    #echo "More than one by newname"
-    name=$( $SQLITE movie.sqlite "select name from director where newname = \"$newname\";")
-    echo "$name"
-    exit $count
-fi
-#echo "checking after adding (I)"
-countname="$ORIGNAME (I)"
-count=$( $SQLITE movie.sqlite "select count(1) from director where name = \"$countname\";")
 
-if [[ $count -eq 1 ]]; then
-    name=$( $SQLITE movie.sqlite "select name from director where name = \"$countname\";")
-    echo "$name";
-    exit 0
-elif [[ $count -gt 1 ]]; then
-    echo "MORE THAN ONE IN (I) CASE" 1>&2
-    name=$( $SQLITE movie.sqlite "select name from director where name = \"$countname\";")
-    echo "$name";
-    exit 99
+OPT_LOWERCASE=
+if ! [[ "$name" =~ [A-Z] ]]; then OPT_LOWERCASE=1 ; OPT_LIKE=1; fi
+
+if [[ -n "$OPT_LIKE" ]]; then
+    MYOPERATOR=LIKE
 fi
+
+#echo "newname search for $MYOPERATOR $newname"
+newname_search $newname
+[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+
+#-------------------------------------------------------------------------------
+# Roman numbering search. We add a (I) and check.
+#-------------------------------------------------------------------------------
+
+#echo "checking after adding (I)"
+romanname="$ORIGNAME (I)"
+name_search "$romanname"
+[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+
 # last ditch 2015-12-06 - indexes are nocase so lets try like
 #echo trying nocase like. esp useful if user enters in lower case or doesn't know case of middle name
 names=$( $SQLITE movie.sqlite "select name from director where newname LIKE \"$ORIGNAME\" OR name LIKE \"$ORIGNAME\";")
-leni=$( echo -e "${names}" | grep -c . )
-if (( $leni > 0 )); then
-    echo "$names"
-    exit 0
-fi
-names=$( $SQLITE movie.sqlite "select name from ascii_director where ascii_newname LIKE \"$ORIGNAME\" OR ascii_name LIKE \"$ORIGNAME\";")
-leni=$( echo -e "${names}" | grep -c . )
-if (( $leni > 0 )); then
-    echo "$names"
-    exit 0
-fi
+[[ -n "$names" ]] && { echo "$names" ; exit 0; }
+
+
+#-------------------------------------------------------------------------------
+# Check ascii_director since the name in the database maybe with accents / diacritics.
+#-------------------------------------------------------------------------------
+
+RESULT=$( $SQLITE movie.sqlite "select name from ascii_director where ascii_newname LIKE \"$ORIGNAME\" OR ascii_name LIKE \"$ORIGNAME\";")
+[[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
 exit 1
