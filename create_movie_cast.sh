@@ -14,7 +14,7 @@
 #        AUTHOR: jkepler
 #  ORGANIZATION: 
 #       CREATED: 12/03/2015 19:58
-#      REVISION:  2015-12-03 20:30
+#      REVISION:  2015-12-06 15:07
 #===============================================================================
 
 #set -o nounset                              # Treat unset variables as an error
@@ -94,6 +94,9 @@ pinfo "calling ./resortdbf.sh --actors"
 pinfo "calling ./resortdbf.sh --actresses"
 ./resortdbf.sh --actresses
 
+echo "Sorry but I have to remove Molina, Óscar since SQLITE gives an error on indexes that are NOCASE :("
+echo "Molina, Óscar clashes with Molina, Òscar who seems to be more important."
+grep -v "Molina, Óscar" movie_actors.dbf | sponge movie_actors.dbf
 echo "sort movie_actresses.dbf movie_actors.dbf > $OUTFILE"
 sort movie_actresses.dbf movie_actors.dbf > $OUTFILE
 wc -l $OUTFILE
