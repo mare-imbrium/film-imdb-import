@@ -31,6 +31,8 @@ echo "Creating $MYDATABASE "
 
 
 $COMM $MYDATABASE << !
+DROP TABLE $MYTABLE;
+
 CREATE TABLE $MYTABLE (
 	name VARCHAR, 
 	newname VARCHAR,
@@ -40,13 +42,25 @@ CREATE TABLE $MYTABLE (
 .mode tabs
 .import $INFILE $MYTABLE
 !
-echo "Creating index on name"
-$COMM $MYDATABASE << !
-CREATE UNIQUE INDEX actor_name on actor(name);
-!
 echo "$MYTABLE Imported"
+echo "Creating index on name -- ideally should be UNIQUE but original data has errors preventing unique nocase index"
+$COMM $MYDATABASE << !
+CREATE INDEX actor_name on actor(name COLLATE NOCASE);
+!
+echo "Creating index on newname"
+$COMM $MYDATABASE << !
+CREATE INDEX actor_newname on actor(newname COLLATE NOCASE);
+!
+echo "Running one or two checks ..."
 $COMM $MYDATABASE << !
  select count(1) from $MYTABLE;
- select * from $MYTABLE limit 10;
+     select * from $MYTABLE where name = "Tracy, Spencer (I)";
+     select * from $MYTABLE where newname = "Dharmendra";
 !
+echo "Checking for duplicate names (ignoring case)"
+echo "These are errors in the original data"
+$COMM $MYDATABASE << !
+     select name, count(1) from actor group by upper(name) having count(1) > 1;
+!
+
 wc -l $INFILE
