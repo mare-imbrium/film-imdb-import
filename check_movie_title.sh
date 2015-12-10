@@ -14,7 +14,7 @@
 #        AUTHOR: YOUR NAME (), 
 #  ORGANIZATION: 
 #       CREATED: 12/08/2015 19:25
-#      REVISION:  2015-12-10 00:18
+#      REVISION:  2015-12-10 15:11
 #===============================================================================
 
 # Steps
@@ -221,8 +221,8 @@ if [[ -n "$OPT_LIKE" ]]; then
     title_search "$name"
     [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
 fi
-if [[ "$name" =~ [A-Z] ]]; then echo "$name contains uppercase" 1>&2 ; fi
-if [[ "$name" =~ ^[A-Z] ]]; then echo "$name starts uppercase" 1>&2 ; fi
+#if [[ "$name" =~ [A-Z] ]]; then echo "$name contains uppercase" 1>&2 ; fi
+#if [[ "$name" =~ ^[A-Z] ]]; then echo "$name starts uppercase" 1>&2 ; fi
 OPT_LOWERCASE=
 if ! [[ "$name" =~ [A-Z] ]]; then OPT_LOWERCASE=1 ; fi
 
