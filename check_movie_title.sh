@@ -14,7 +14,7 @@
 #        AUTHOR: YOUR NAME (), 
 #  ORGANIZATION: 
 #       CREATED: 12/08/2015 19:25
-#      REVISION:  2015-12-10 15:11
+#      REVISION:  2015-12-11 15:16
 #===============================================================================
 
 # Steps
@@ -32,6 +32,14 @@
 #
 
 MYTABLE=movie
+print_result() {
+    [[ -n "$RESULT" ]] && { echo "$RESULT" ; 
+    if [[ -n "$OPT_INTERACTIVE" ]]; then
+        echo "$RESULT" >> ~/.HISTFILE_MOVIETITLE
+    fi
+    exit 0; }
+
+}
 # defaults to an equal search but can be used for GLOB or LIKE
 title_search() {
     name="$*"
@@ -73,28 +81,28 @@ baretitle_search() {
     if [[ -n "$OPT_LOWERCASE" ]]; then
         # do a like search
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle = \"$name\";")
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         # maybe a case issue
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle LIKE \"$name\";")
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle LIKE \"${name}%\";")
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         aka_title_search_like "$name"
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         MYOPERATOR=LIKE
         ascii_title_search "${name}%"
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
     else
         # do a glob search
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle GLOB \"${name}*\";")
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         MYOPERATOR=GLOB
         aka_title_search "${name}*"
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         ascii_title_search "${name}*"
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle GLOB \"*${name}*\";")
-        [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+        print_result
     fi
     return 1
 }
@@ -130,6 +138,9 @@ while [[ $1 = -* ]]; do
         -V|--verbose)   shift
             OPT_VERBOSE=1
             ;;
+        -I|--interactive)   shift
+            OPT_INTERACTIVE=1
+            ;;
         --debug)        shift
             OPT_DEBUG=1
             ;;
@@ -160,8 +171,12 @@ while [[ $1 = -* ]]; do
 done
 
 if [  $# -eq 0 ]; then
-    echo "Error: Title required in Title, (Year) format" 1>&2
-    exit 1
+    if [[ -n "$OPT_INTERACTIVE" ]]; then
+        name=$(rlwrap -pYellow -S 'Movie name? ' -H ~/.HISTFILE_MOVIETITLE -P "" -o cat)
+    else
+        echo "Error: Title required in Title, (Year) format" 1>&2
+        exit 1
+    fi
 else
     name="$*"
 fi
@@ -172,35 +187,35 @@ SQLITE=$(brew --prefix sqlite)/bin/sqlite3
 # user forcing aka check since there are already english movies by that name
 if [[ -n "$OPT_AKA" ]]; then
     aka_title_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
     #echo exiting aka titles failing $name
     MYOPERATOR="GLOB"
     aka_title_search "${name}*"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
     echo "exiting aka titles failing GLO ${name}" 1>&2
     exit 1
 fi
 if [[ "${name: -1}" == '*' ]]; then
     MYOPERATOR="GLOB"
     title_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
     # check aka_title
     MYOPERATOR="GLOB"
     aka_title_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
     exit 1
 fi
 
 exact_search "$name"
 if [[ -n "$RESULT" ]]; then
-    echo "$RESULT";
+    print_result
     exit 0
 else
     if [[ -n "$OPT_EXACT" ]]; then
         # user asked for exact search, since exact not found, we quit with error
         aka_title_search_exact "$name"
         if [[ -n "$RESULT" ]]; then
-            echo "$RESULT";
+            print_result
             exit 0
         fi
         exit 1
@@ -219,7 +234,7 @@ if [[ "$name" =~ %$ ]]; then OPT_LIKE=1; fi
 if [[ -n "$OPT_LIKE" ]]; then
     MYOPERATOR=LIKE
     title_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
 fi
 #if [[ "$name" =~ [A-Z] ]]; then echo "$name contains uppercase" 1>&2 ; fi
 #if [[ "$name" =~ ^[A-Z] ]]; then echo "$name starts uppercase" 1>&2 ; fi
@@ -228,13 +243,13 @@ if ! [[ "$name" =~ [A-Z] ]]; then OPT_LOWERCASE=1 ; fi
 
 if [[ -n "$OPT_BARETITLE" ]]; then
     baretitle_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
 fi
 if [[ -n "$OPT_LOWERCASE" ]]; then
     # full title, but lowercase so try like search on full title
     MYOPERATOR=LIKE
     title_search "$name"
-    [[ -n "$RESULT" ]] && { echo "$RESULT" ; exit 0; }
+    print_result
 fi
 # we seem to have failed everywhere but we haven't check aka_title
 
