@@ -14,7 +14,7 @@
 #        AUTHOR: YOUR NAME (), 
 #  ORGANIZATION: 
 #       CREATED: 12/08/2015 19:25
-#      REVISION:  2015-12-11 15:16
+#      REVISION:  2015-12-12 00:03
 #===============================================================================
 
 # Steps
@@ -68,6 +68,15 @@ aka_title_search() {
     fi
     RESULT=$( $SQLITE movie.sqlite "select distinct(title) from aka_title where aka $MYOPERATOR \"${var}\";")
 }
+reverse_aka_title_search() {
+    # TODO maybe here we should check operator for * and %. But what if user wants exact
+    var="$*"
+    RESULT=
+    if [[ -z "$MYOPERATOR" ]]; then
+        MYOPERATOR="="
+    fi
+    RESULT=$( $SQLITE movie.sqlite "select distinct(aka) from aka_title where title $MYOPERATOR \"${var}\";")
+}
 ascii_title_search() {
     # TODO maybe here we should check operator for * and %. But what if user wants exact
     var="$*"
@@ -78,8 +87,10 @@ ascii_title_search() {
     RESULT=$( $SQLITE movie.sqlite "select distinct(title) from ascii_title where ascii_title $MYOPERATOR \"${var}\";")
 }
 baretitle_search() {
+    # NOTE this will probably be the most used so should be thought out carefully
+    # What if used specified contains
     if [[ -n "$OPT_LOWERCASE" ]]; then
-        # do a like search
+        # do a like search NEXT IS REDUNDANT SHD BE IN ELSE
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle = \"$name\";")
         print_result
         # maybe a case issue
@@ -93,6 +104,8 @@ baretitle_search() {
         ascii_title_search "${name}%"
         print_result
     else
+        RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle = \"$name\";")
+        print_result
         # do a glob search
         RESULT=$( $SQLITE $MYDATABASE "select title from $MYTABLE where baretitle GLOB \"${name}*\";")
         print_result
@@ -124,21 +137,51 @@ MYDATABASE=movie.sqlite
 OPT_EXACT=
 OPT_IC=
 OPT_AKA=
+OPT_REVERSE_AKA=
+OPT_CONTAINS=
+OPT_STARTS_WITH=
+OPT_REGEX=
+OPT_LOWERCASE=
+MYOPERATOR=
+OPT_PRE=
+OPT_POST=
 while [[ $1 = -* ]]; do
     case "$1" in
         -x|--exact)   shift
             OPT_EXACT=1
+            MYOPERATOR="="
+            # user is specifying exact name and does not wish us to GLOB or LIKE 
+            ;;
+        --starts-with|--starts)   shift
+            OPT_STARTS_WITH=1
+            MYOPERATOR="GLOB"
+            OPT_PRE=
+            OPT_POST='*'
+            ;;
+        --contains)   shift
+            OPT_CONTAINS=1
+            MYOPERATOR="LIKE"
+            OPT_PRE=%
+            OPT_POST='%'
             ;;
         --aka)   shift
             OPT_AKA=1
+            # user knows English name, but most tables use the original foreign name
+            ;;
+        --reverse-aka)   shift
+            # user knows original foreign name but wishes to know English names
+            OPT_REVERSE_AKA=1
             ;;
         -i|--ignorecase)   shift
-            OPT_IC=1
+            #OPT_IC=1
+            OPT_LOWERCASE=1
+            MYOPERATOR="LIKE"
             ;;
         -V|--verbose)   shift
             OPT_VERBOSE=1
             ;;
         -I|--interactive)   shift
+            # prompt if no movies given, also saves movie name to hist file so usable in other commands
             OPT_INTERACTIVE=1
             ;;
         --debug)        shift
@@ -154,11 +197,18 @@ while [[ $1 = -* ]]; do
             The next searches movie and aka-title for exact match and returns actual Japanese title
             $0 --exact "The Life of Oharu (1952)"
             $0 --exact "Casablanca (1942)"
-            The next forces a check against aka table
+            The next forces a check against aka table (use this if you know only the English name of a 
+              foreign movie.
             $0 --aka "The Only Son"
+
+            The next is useful if you know the foreign name of a film and wish to know the other names.
+            $0 --reverse-aka "Higanbana"
 
             The next does a GLOB search against movie and aka-title and returns actual Japanese title
             $0 "The Life of Oharu *"
+
+            If no movie is specified on CL, then ask. This uses readline, and allows selection from history file.
+            $0 --interactive
 			!
             exit
             ;;
@@ -184,15 +234,44 @@ fi
 ORIGNAME=$name
 SQLITE=$(brew --prefix sqlite)/bin/sqlite3
 
+if [[ -n "$OPT_EXACT" ]]; then
+    exact_search "$name"
+    if [[ -n "$RESULT" ]]; then
+        print_result
+        exit 0
+    else
+        aka_title_search_exact "$name"
+        if [[ -n "$RESULT" ]]; then
+            print_result
+            exit 0
+        fi
+    fi
+    # user asked for exact search, since exact not found, we quit with error
+    exit 1
+fi
 # user forcing aka check since there are already english movies by that name
+# # TODO what if user specifies AKA and CONTAINS or STARTS or LIKE/LOWERCASE
+mypatt="${OPT_PRE}${name}${OPT_POST}"
 if [[ -n "$OPT_AKA" ]]; then
-    aka_title_search "$name"
+    aka_title_search "$mypatt"
     print_result
     #echo exiting aka titles failing $name
     MYOPERATOR="GLOB"
     aka_title_search "${name}*"
     print_result
-    echo "exiting aka titles failing GLO ${name}" 1>&2
+    # -- maybe this title is a valid one, but user wants to see other titles for it 
+    #echo "exiting aka titles failing aka GLO ${name}" 1>&2
+    exit 1
+fi
+if [[ -n "$OPT_REVERSE_AKA" ]]; then
+    reverse_aka_title_search "$mypatt"
+    print_result
+    #echo exiting aka titles failing $name
+    MYOPERATOR="GLOB"
+    reverse_aka_title_search "${name}*"
+    print_result
+    # -- maybe this title is a valid one, but user wants to see other titles for it 
+    #echo "exiting aka titles failing aka GLO ${name}" 1>&2
     exit 1
 fi
 if [[ "${name: -1}" == '*' ]]; then
@@ -205,28 +284,30 @@ if [[ "${name: -1}" == '*' ]]; then
     print_result
     exit 1
 fi
+if [[ -n "$OPT_CONTAINS" ]]; then
+    MYOPERATOR=LIKE
+    title_search "%$name%"
+    print_result
+    exit 1
+fi
+if [[ -n "$OPT_STARTS_WITH" ]]; then
+    MYOPERATOR=GLOB
+    title_search "$name*"
+    print_result
+    exit 1
+fi
 
 exact_search "$name"
 if [[ -n "$RESULT" ]]; then
     print_result
     exit 0
-else
-    if [[ -n "$OPT_EXACT" ]]; then
-        # user asked for exact search, since exact not found, we quit with error
-        aka_title_search_exact "$name"
-        if [[ -n "$RESULT" ]]; then
-            print_result
-            exit 0
-        fi
-        exit 1
-    fi
 fi
 # check if baretitle
-OPT_BARETITLE=0
+OPT_BARETITLE=
 if [[ $name = *\([0-9][0-9]* ]]; then
-    OPT_BARETITLE=0
+    OPT_BARETITLE=
 else
-    echo "$name does not contain year" 1>&2
+    #echo "$name does not contain year" 1>&2
     OPT_BARETITLE=1
 fi
 if [[ "$name" =~ ^% ]]; then OPT_LIKE=1; fi
@@ -238,17 +319,16 @@ if [[ -n "$OPT_LIKE" ]]; then
 fi
 #if [[ "$name" =~ [A-Z] ]]; then echo "$name contains uppercase" 1>&2 ; fi
 #if [[ "$name" =~ ^[A-Z] ]]; then echo "$name starts uppercase" 1>&2 ; fi
-OPT_LOWERCASE=
 if ! [[ "$name" =~ [A-Z] ]]; then OPT_LOWERCASE=1 ; fi
 
 if [[ -n "$OPT_BARETITLE" ]]; then
-    baretitle_search "$name"
+    baretitle_search "$mypatt"
     print_result
 fi
 if [[ -n "$OPT_LOWERCASE" ]]; then
     # full title, but lowercase so try like search on full title
     MYOPERATOR=LIKE
-    title_search "$name"
+    title_search "$mypatt"
     print_result
 fi
 # we seem to have failed everywhere but we haven't check aka_title
