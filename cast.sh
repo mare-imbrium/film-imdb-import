@@ -83,13 +83,14 @@ if [[ -n "$opt_debug" ]]; then
 fi
 
 if [[ $# -eq 0 ]]; then
-    echo -n "Enter movie pattern: "
-    read ANS
+	ANS=$(rlwrap -pYellow -S 'Movie name? ' -H ~/.HISTFILE_MOVIETITLE -P "" -o cat)
+    #echo -n "Enter movie pattern: "
+    #read ANS
 else
     ANS="$*"
 fi
 if [[ -z "$ANS" ]]; then
-    exit
+    exit 1
 fi
 #echo $ANS
 
@@ -129,11 +130,12 @@ function search_pattern() {
 PATT="$*"
 #echo $PATT
 
-$COMM $MYDATABASE <<!
+RESULT=$( $COMM $MYDATABASE <<!
 .mode tabs
 .headers on
   select $MYCOLS from $MYTABLE where $MYCOL like "%${PATT}%";
 !
+)
 
 }
 function search_exact() {
@@ -141,11 +143,12 @@ function search_exact() {
     if [[ -n "$opt_no_title" ]]; then
         MYCOLS="name, billing, character"
     fi
-$COMM $MYDATABASE <<!
+RESULT=$( $COMM $MYDATABASE <<!
 .mode tabs
 .headers on
   select $MYCOLS from $MYTABLE where $MYCOL = "${PATT}";
 !
+)
 
 }
 if [[ -n "$opt_only_titles" ]]; then
@@ -155,9 +158,14 @@ if [[ -n "$opt_only_titles" ]]; then
 fi
 echo "== Searching with $ANS" >&2
 if [[ -z "$opt_exact" ]]; then
-    echo using like search
-    search_pattern "$ANS"
-else
-    #echo using exacccct search
     search_exact "$ANS"
+	[[ -n "$RESULT" ]] && { echo -e "$RESULT"; exit 0; }
+    echo using like search 1>&2
+    search_pattern "$ANS"
+	[[ -n "$RESULT" ]] && { echo -e "$RESULT"; exit 0; }
+else
+    #echo using exact search
+    search_exact "$ANS"
+	[[ -n "$RESULT" ]] && { echo -e "$RESULT"; exit 0; }
 fi
+exit 1
