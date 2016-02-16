@@ -1,0 +1,58 @@
+>>> ./check_director_name.sh "Francois Truffaut"
+Truffaut, François
+>>> END
+>>> ./check_director_name.sh "Hitchcock, A*"
+Hitchcock, Alfred (I)
+Hitchcock, Andy (I)
+>>> END
+>>> ./check_director_name.sh "Hitchcock, Al*"
+Hitchcock, Alfred (I)
+>>> END
+>>> ./check_director_name.sh "Hitchcock, Alfred"
+Hitchcock, Alfred (I)
+>>> END
+>>> ./check_director_name.sh "Truffaut"
+NO RESULT
+>>> END
+>>> ./check_director_name.sh "Truffaut, F*"
+Truffaut, François
+>>> END
+>>> ./check_director_name.sh "Truffaut, Francois"
+Truffaut, François
+>>> END
+>>> ./check_director_name.sh "alfred hitchcock"
+Hitchcock, Alfred (I)
+>>> END
+>>> ./check_director_name.sh "hitchcock, alfred"
+Hitchcock, Alfred (I)
+>>> END
+>>> ./check_director_name.sh "Alejandro Gonzalez Inarritu"
+González Iñárritu, Alejandro
+>>> END
+>>> ./check_director_name.sh "Gonzalez Inarritu, Alejandro"
+González Iñárritu, Alejandro
+>>> END
+>>> ./check_director_name.sh --exact "Griffith, D.W. (I)"
+Griffith, D.W. (I)
+>>> END
+>>> ./check_director_name.sh "Griffith, D.W."
+Griffith, D.W. (I)
+>>> END
+>>> ./check_director_name.sh "Francis Ford"
+Ford, Francis (I)
+>>> END
+>>> ./check_director_name.sh "Ozu, Yasuji*"
+Ozu, Yasujirô
+>>> END
+>>> ./check_director_name.sh "Kurosawa"
+NO RESULT
+>>> END
+>>> ./check_director_name.sh "Alejandro González Iñárritu"
+González Iñárritu, Alejandro
+>>> END
+>>> ./check_director_name.sh --exact "González Iñárritu, Alejandro"
+González Iñárritu, Alejandro
+>>> END
+>>> ./check_director_name.sh "González Iñárritu, Alejandro"
+González Iñárritu, Alejandro
+>>> END

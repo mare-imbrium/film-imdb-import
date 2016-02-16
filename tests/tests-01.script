@@ -1,0 +1,96 @@
+>>> ./check_movie_title.sh 'life of pi %'
+Life of Pi (2012)
+>>> END
+>>> ./check_movie_title.sh 'Life of Pi (2012)'
+Life of Pi (2012)
+>>> END
+>>> ./check_movie_title.sh 'life of pi (2012)'
+Life of Pi (2012)
+>>> END
+>>> ./check_movie_title.sh 'Life of Pi'
+Life of Pi (2012)
+>>> END
+>>> ./check_movie_title.sh 'life of pi'
+Life of Pi (2012)
+>>> END
+>>> ./check_movie_title.sh 'the devil'
+The Devil (1908/I)
+The Devil (1915)
+The Devil (1921)
+>>> END
+>>> ./check_movie_title.sh 'The Devil, Probably'
+Le diable probablement (1977)
+>>> END
+>>> ./check_movie_title.sh 'the devil, probably'
+Le diable probablement (1977)
+>>> END
+>>> ./check_movie_title.sh 'the devil,'
+The Devil, the Servant and the Man (1912)
+The Devil, the Servant and the Man (1916)
+The Devil, the Servant, and the Man (1910)
+>>> END
+>>> ./check_movie_title.sh 'The Life of Oharu (1952)'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh 'The Life of Oharu'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh 'The Life of Oharu'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh 'the Life of Oharu'
+NO RESULT
+>>> END
+>>> ./check_movie_title.sh 'the life of oharu'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh 'The Life of Oharu*'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh -x 'The Life of Oharu (1952)'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh -x 'The Life of Oharu'
+NO RESULT
+>>> END
+>>> ./check_movie_title.sh -x 'The Life of Oharu*'
+Saikaku ichidai onna (1952)
+>>> END
+>>> ./check_movie_title.sh 'The Only Son'
+The Only Son (1914)
+The Only Son (1926)
+>>> END
+>>> ./check_movie_title.sh --aka 'Heart of Glass'
+Heart of Glass (2015/II)
+Herz aus Glas (1976)
+Lasisydän (1959)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Devil, Probably'
+Le diable probablement (1977)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Devil,'
+Le diable probablement (1977)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Only Son '
+Hitori musuko (1936)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Only Son'
+Hitori musuko (1936)
+Shan qing shui xiu (2003)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Only Son*'
+Hitori musuko (1936)
+Shan qing shui xiu (2003)
+>>> END
+>>> ./check_movie_title.sh --aka 'The Only Son,'
+NO RESULT
+>>> END
+>>> ./check_movie_title.sh --aka 'Tokyo monogatari'
+NO RESULT
+>>> END
+>>> ./check_movie_title.sh --aka 'Tokyo Story'
+Tôkyô monogatari (1953)
+>>> END
+>>> ./check_movie_title.sh --aka 'Tokyo monogatari (1953)'
+NO RESULT
+>>> END
