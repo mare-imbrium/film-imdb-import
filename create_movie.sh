@@ -3,6 +3,7 @@ COMM=$( brew --prefix sqlite)/bin/sqlite3
 $COMM --version
 echo "WARNING !!!"
 echo "This must be run after movie_cast.tsv and movie.tsv has been generated"
+# movie,tsv was created by create_movie_list.sh in imdb_data.
 echo
 MYDATABASE=movie.sqlite
 MYTABLE=movie
@@ -26,10 +27,13 @@ CREATE TABLE $MYTABLE (
 echo $MYTABLE imported
 
 echo creating indexes on title and baretitle
+# index on year is needed since we print movies of an actor sorted on year
 $COMM $MYDATABASE <<!
     CREATE INDEX ${MYTABLE}_title on $MYTABLE(title COLLATE NOCASE);
     CREATE INDEX ${MYTABLE}_baretitle on $MYTABLE(baretitle COLLATE NOCASE);
+    CREATE INDEX ${MYTABLE}_year on $MYTABLE(year);
 !
+
 echo checking ...
 $COMM $MYDATABASE <<!
    select count(1) from $MYTABLE ;
@@ -37,6 +41,12 @@ $COMM $MYDATABASE <<!
        select * from $MYTABLE where baretitle = "Herz aus Glas";
        select * from $MYTABLE where baretitle = "Casablanca";
        select * from $MYTABLE where baretitle = "Life of Pi";
+           select * from $MYTABLE where title = "Babel (2006/I)";
+           select * from $MYTABLE where title LIKE "Birdman: %";
+!
+echo checking for blank year
+$COMM $MYDATABASE <<!
+   select count(1) from $MYTABLE where year = "";
 !
 
 wc -l $INFILE
