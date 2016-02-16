@@ -3,6 +3,8 @@
 This contains programs to convert IMDB dataset into what can be
 imported into sqlite.
 
+## This is a personal repo
+
 -----------
 
 The json database has english titles for movies not original jap ones.
